@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "../lib/queryClient";
-// import { Button } from "@/client/src/components/ui/button";
-import { Button } from "./ui/button";
-// import { Input } from "@/components/ui/input";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-// import { useToast } from "@/client/src/hooks/use-toast";
-import { useToast } from "../hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 

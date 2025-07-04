@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/client/src/components/ui/card";
-import { Button } from "@/client/src/components/ui/button";
-import { Input } from "@/client/src/components/ui/input";
-import { Label } from "@/client/src/components/ui/label";
-import { Textarea } from "@/client/src/components/ui/textarea";
-import { Badge } from "@/client/src/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,18 +13,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/client/src/components/ui/table";
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/client/src/components/ui/dialog";
-import { Switch } from "@/client/src/components/ui/switch";
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Edit2, Trash2, MapPin, Clock, DollarSign } from "lucide-react";
-import { useToast } from "@/client/src/hooks/use-toast";
-import { queryClient } from "@/client/src/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface Court {
   id: number;

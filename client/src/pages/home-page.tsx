@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useAuth } from "../hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { UserBookingForm } from "../components/user-booking-form";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-
-import { Separator } from "../components/ui/separator";
+import { UserBookingForm } from "@/components/user-booking-form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, User, LogOut, Settings } from "lucide-react";
 import { format } from "date-fns";
