@@ -158,7 +158,12 @@ var insertBookingSchema = createInsertSchema(bookings).omit({
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-dotenv.config();
+import { fileURLToPath } from "url";
+import path from "path";
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = path.dirname(__filename);
+var envPath = path.join(__dirname, ".env");
+dotenv.config({ path: envPath });
 if (!process.env.DATABASE_URL) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?"
@@ -1024,14 +1029,14 @@ function registerRoutes(app2) {
 // server/vite.ts
 import express from "express";
 import fs from "fs";
-import path2 from "path";
+import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
-import { fileURLToPath, URL as URL2 } from "node:url";
+import path2 from "path";
+import { fileURLToPath as fileURLToPath2, URL as URL2 } from "node:url";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 var vite_config_default = defineConfig({
   plugins: [
@@ -1045,14 +1050,14 @@ var vite_config_default = defineConfig({
   ],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL2("./client/src", import.meta.url)),
-      "@shared": fileURLToPath(new URL2("./shared", import.meta.url)),
-      "@assets": fileURLToPath(new URL2("./attached_assets", import.meta.url))
+      "@": fileURLToPath2(new URL2("./client/src", import.meta.url)),
+      "@shared": fileURLToPath2(new URL2("./shared", import.meta.url)),
+      "@assets": fileURLToPath2(new URL2("./attached_assets", import.meta.url))
     }
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path2.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path2.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true
   },
   server: {
@@ -1102,7 +1107,7 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path2.resolve(
+      const clientTemplate = path3.resolve(
         import.meta.dirname,
         "..",
         "client",
@@ -1122,7 +1127,7 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "../client");
+  const distPath = path3.resolve(import.meta.dirname, "../client");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -1130,7 +1135,7 @@ function serveStatic(app2) {
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
@@ -1142,7 +1147,7 @@ app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -1151,8 +1156,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
