@@ -198,7 +198,9 @@ var DatabaseStorage = class {
     return user || void 0;
   }
   async getUserByUsername(username) {
+    debugger;
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    console.log([user]);
     return user || void 0;
   }
   async getUserByEmail(email) {
@@ -437,10 +439,11 @@ var storage = new DatabaseStorage();
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session2 from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import dotenv2 from "dotenv";
 dotenv2.config({ path: ".env" });
+console.log("\u{1F525} server/index.ts started");
 var scryptAsync = promisify(scrypt);
 async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
@@ -449,21 +452,7 @@ async function hashPassword(password) {
 }
 async function comparePasswords(supplied, stored) {
   try {
-    const parts = stored.split(".");
-    if (parts.length !== 2) {
-      console.warn(
-        "Invalid password format detected, might be legacy password"
-      );
-      return false;
-    }
-    const [hashed, salt] = parts;
-    if (!hashed || !salt) {
-      console.warn("Missing hash or salt in stored password");
-      return false;
-    }
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = await scryptAsync(supplied, salt, 64);
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    return supplied === stored;
   } catch (error) {
     console.error("Error comparing passwords:", error);
     return false;
@@ -482,8 +471,10 @@ function setupAuth(app2) {
   app2.use(passport.session());
   passport.use(
     new LocalStrategy(async (username, password, done) => {
+      console.log("Trying to log in:", username);
       try {
         const user = await storage.getUserByUsername(username);
+        console.log("User: ", user);
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
@@ -529,7 +520,7 @@ function setupAuth(app2) {
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         console.error("Login authentication error:", err);
-        return res.status(500).json({ message: "Authentication error" });
+        return res.status(500).json({ message: "Authentication error", error: err.message });
       }
       if (!user) {
         return res.status(401).json({
@@ -1068,6 +1059,10 @@ var vite_config_default = defineConfig({
     fs: {
       strict: true,
       deny: ["**/.*"]
+    },
+    proxy: {
+      "/api": "http://localhost:5000"
+      // 👈 Add this to route API calls to backend
     }
   }
 });
@@ -1127,7 +1122,7 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "public");
+  const distPath = path2.resolve(import.meta.dirname, "../client");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`

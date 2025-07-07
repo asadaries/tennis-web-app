@@ -1,23 +1,17 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "../shared/schema.js";
+import dotenv from "dotenv";
 
-// Direct database configuration - no environment variables needed
-const connectionConfig = {
-  host: '45.84.205.0',        // Working IP address
-  port: 3306,
-  user: 'u424760305_user',
-  password: '9H8eexRU^v',
-  database: 'u424760305_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-};
+dotenv.config();
 
-console.log('Database connection config:', {
-  ...connectionConfig,
-  password: '***' // Hide password in logs
-});
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?"
+  );
+}
 
-export const pool = mysql.createPool(connectionConfig);
+// Encode the connection URL to handle special characters
+const encodedUrl = new URL(process.env.DATABASE_URL).toString();
+export const pool = mysql.createPool(encodedUrl);
 export const db = drizzle(pool, { schema, mode: "default" });

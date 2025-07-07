@@ -34,5 +34,8 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+    "/api": "http://localhost:5000", // 👈 Add this to route API calls to backend
+  },
   },
 });

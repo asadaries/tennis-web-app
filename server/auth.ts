@@ -9,6 +9,7 @@ import { User as SelectUser } from "../shared/schema.js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
+console.log("🔥 server/index.ts started");
 
 declare global {
   namespace Express {
@@ -26,24 +27,25 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
-    const parts = stored.split(".");
-    if (parts.length !== 2) {
-      // Handle legacy passwords that might not have salt
-      console.warn(
-        "Invalid password format detected, might be legacy password"
-      );
-      return false;
-    }
+    // const parts = stored.split(".");
+    // if (parts.length !== 2) {
+    //   // Handle legacy passwords that might not have salt
+    //   console.warn(
+    //     "Invalid password format detected, might be legacy password"
+    //   );
+    //   return false;
+    // }
 
-    const [hashed, salt] = parts;
-    if (!hashed || !salt) {
-      console.warn("Missing hash or salt in stored password");
-      return false;
-    }
+    // const [hashed, salt] = parts;
+    // if (!hashed || !salt) {
+    //   console.warn("Missing hash or salt in stored password");
+    //   return false;
+    // }
 
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    // const hashedBuf = Buffer.from(hashed, "hex");
+    // const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    // return timingSafeEqual(hashedBuf, suppliedBuf);
+    return supplied === stored;
   } catch (error) {
     console.error("Error comparing passwords:", error);
     return false;
@@ -65,8 +67,10 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
+      console.log("Trying to log in:", username);
       try {
         const user = await storage.getUserByUsername(username);
+        console.log('User: ', user);
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
@@ -118,7 +122,7 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Login authentication error:", err);
-        return res.status(500).json({ message: "Authentication error" });
+        return res.status(500).json({ message: "Authentication error",error: err.message });
       }
 
       if (!user) {

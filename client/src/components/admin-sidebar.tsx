@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 import {
   LayoutDashboard,
   Calendar,
@@ -16,8 +16,8 @@ import {
   Home,
   LogOut,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { Button } from "./ui/button";
+import { useAuth } from "../hooks/use-auth";
 
 interface SidebarProps {
   isOpen: boolean;
