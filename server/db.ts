@@ -7,7 +7,7 @@ import path from "path";
 
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
-var envPath = path.join(__dirname, ".env");
+var envPath = path.join(__dirname, "..", ".env");
 dotenv.config({ path: envPath });
 
 if (!process.env.DATABASE_URL) {
