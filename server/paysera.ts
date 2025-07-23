@@ -83,10 +83,6 @@ export function setupPaysera(app: Express) {
 
   app.post("/api/payment/generate", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
       const {
         orderid,
         amount,
@@ -142,9 +138,6 @@ export function setupPaysera(app: Express) {
 
   app.get("/api/payment/status/:orderid", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
 
       const { orderid } = req.params;
       
@@ -167,9 +160,6 @@ export function setupPaysera(app: Express) {
 
   app.post("/api/payment/create-order", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
 
       const { amount, currency = "EUR", description } = req.body;
 
