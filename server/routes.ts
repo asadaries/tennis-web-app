@@ -37,18 +37,32 @@ function requireAuth(req: any, res: any, next: any) {
 }
 
 export function registerRoutes(app: Express): Server {
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
-    }
-  });
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // List of allowed origins
+  const allowedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:19006',    
+    'http://localhost:3000',   
+    'http://127.0.0.1:8081', 
+    'https://tennis-web-app.vercel.app',
+  ];
+  
+  if (origin && (allowedOrigins.includes(origin) || origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT,DELETE');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
   // Set up authentication routes
   setupAuth(app);
