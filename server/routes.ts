@@ -9,6 +9,7 @@ import {
   insertBookingSchema,
 } from "../shared/schema.js";
 import { z } from "zod";
+import { setupPaysera } from "./paysera.js";
 
 function requireAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated() || !req.user || req.user.role !== "admin") {
@@ -38,6 +39,7 @@ function requireAuth(req: any, res: any, next: any) {
 export function registerRoutes(app: Express): Server {
   // Set up authentication routes
   setupAuth(app);
+  setupPaysera(app);
 
   // User routes
   app.get("/api/users", requireAdmin, async (req, res) => {
@@ -159,16 +161,17 @@ export function registerRoutes(app: Express): Server {
         .split("T")[0];
 
       const dailyRevenue = confirmedBookings
-        .filter((b) => b.timeSlot.date === todayStr)
-        .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+      .filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] === todayStr)
+      .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+
 
       const weeklyRevenue = confirmedBookings
-        .filter((b) => b.timeSlot.date >= weekAgo)
-        .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+      .filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] >= weekAgo)
+      .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
 
-      const monthlyRevenue = confirmedBookings
-        .filter((b) => b.timeSlot.date >= monthAgo)
-        .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+    const monthlyRevenue = confirmedBookings
+      .filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] >= monthAgo)
+      .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
 
       // Calculate occupancy rate
       const totalTimeSlots = bookings.length;
@@ -372,6 +375,7 @@ export function registerRoutes(app: Express): Server {
 
       const rule = await storage.createOrUpdatePricingRule(
         courtId,
+        0,
         timeSlot,
         price
       );
@@ -592,14 +596,15 @@ export function registerRoutes(app: Express): Server {
           .status(400)
           .json({ message: "Start date and end date are required" });
       }
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
 
-      // For now, get all bookings and filter by date range
       const bookings = await storage.getAllBookings();
-      const filteredBookings = bookings.filter((booking) => {
-        const bookingDate = booking.timeSlot.date;
-        return bookingDate >= startDate && bookingDate <= endDate;
-      });
 
+      const filteredBookings = bookings.filter((booking) => {
+        const bookingDate = new Date(booking.timeSlot.date);
+        return bookingDate >= start && bookingDate <= end;
+      });
       res.json(filteredBookings);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
