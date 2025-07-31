@@ -93,7 +93,7 @@ export function setupPaysera(app: Express) {
         lang = "ENG",
         payment,
         country,
-        test = process.env.NODE_ENV === "production" ? 1 : 1,
+        test = process.env.NODE_ENV === "production" ? 0 : 1,
         ...rest
       } = req.body;
 
