@@ -578,6 +578,161 @@ function setupAuth(app2) {
   });
 }
 
+// server/paysera.ts
+import crypto from "crypto";
+import qs from "querystring";
+import dotenv3 from "dotenv";
+dotenv3.config({ path: ".env" });
+var PAYSERA_PROJECT_ID = process.env.PAYSERA_PROJECT_ID || "";
+var PAYSERA_PASSWORD = process.env.PAYSERA_PASSWORD || "";
+function generatePayseraData(params) {
+  const encoded = qs.stringify(params);
+  return Buffer.from(encoded).toString("base64");
+}
+function generatePayseraSignature(data) {
+  return crypto.createHash("md5").update(data + PAYSERA_PASSWORD).digest("hex");
+}
+function validateCallback(data, sign) {
+  const expectedSign = crypto.createHash("md5").update(data + PAYSERA_PASSWORD).digest("hex");
+  return expectedSign === sign;
+}
+function decodeCallbackData(data) {
+  const decoded = Buffer.from(data, "base64").toString("utf-8");
+  return qs.parse(decoded);
+}
+function setupPaysera(app2) {
+  app2.get("/api/payment/success", (req, res) => {
+    try {
+      console.log("Payment success redirect received");
+      res.status(200).json({
+        message: "Payment was successful!",
+        status: "success"
+      });
+    } catch (error) {
+      console.error("Payment success handling error:", error);
+      res.status(500).json({ message: "Error processing payment success" });
+    }
+  });
+  app2.get("/api/payment/cancel", (req, res) => {
+    try {
+      console.log("Payment cancel redirect received");
+      res.status(200).json({
+        message: "Payment was canceled.",
+        status: "canceled"
+      });
+    } catch (error) {
+      console.error("Payment cancel handling error:", error);
+      res.status(500).json({ message: "Error processing payment cancellation" });
+    }
+  });
+  app2.post("/api/payment/callback", (req, res) => {
+    try {
+      const { data, ss1 } = req.body;
+      if (!data || !ss1) {
+        console.warn("Missing Paysera callback data");
+        return res.status(400).json({ message: "Missing Paysera data" });
+      }
+      const valid = validateCallback(data, ss1);
+      if (!valid) {
+        console.warn("Invalid Paysera callback signature");
+        return res.status(403).json({ message: "Invalid signature" });
+      }
+      const callbackData = decodeCallbackData(data);
+      console.log("\u{1F501} Paysera callback received:", callbackData);
+      res.status(200).send("OK");
+    } catch (error) {
+      console.error("Payment callback error:", error);
+      res.status(500).json({ message: "Callback processing failed" });
+    }
+  });
+  app2.post("/api/payment/generate", async (req, res) => {
+    try {
+      const {
+        orderid,
+        amount,
+        currency = "EUR",
+        accepturl = `${process.env.BASE_URL || "http://localhost:3000"}/api/payment/success`,
+        cancelurl = `${process.env.BASE_URL || "http://localhost:3000"}/api/payment/cancel`,
+        callbackurl = `${process.env.BASE_URL || "http://localhost:3000"}/api/payment/callback`,
+        lang = "ENG",
+        payment,
+        country,
+        test = process.env.NODE_ENV === "production" ? 1 : 1,
+        ...rest
+      } = req.body;
+      if (!orderid || !amount) {
+        return res.status(400).json({
+          message: "Order ID and amount are required"
+        });
+      }
+      const params = {
+        projectid: PAYSERA_PROJECT_ID,
+        orderid,
+        amount,
+        currency,
+        accepturl,
+        cancelurl,
+        callbackurl,
+        lang,
+        test,
+        ...rest
+      };
+      if (payment) params.payment = payment;
+      if (country) params.country = country;
+      const data = generatePayseraData(params);
+      const sign = generatePayseraSignature(data);
+      console.log(`Payment generation request for user ${req.user?.id}, order: ${orderid}`);
+      res.status(200).json({
+        data,
+        sign,
+        paymentUrl: "https://www.paysera.com/pay/",
+        message: "Payment data generated successfully"
+      });
+    } catch (error) {
+      console.error("Payment generation error:", error);
+      res.status(500).json({ message: "Payment generation failed" });
+    }
+  });
+  app2.get("/api/payment/status/:orderid", async (req, res) => {
+    try {
+      const { orderid } = req.params;
+      if (!orderid) {
+        return res.status(400).json({ message: "Order ID is required" });
+      }
+      console.log(`Payment status check for order: ${orderid} by user: ${req.user?.id}`);
+      res.status(200).json({
+        orderid,
+        status: "pending",
+        message: "Payment status retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Payment status check error:", error);
+      res.status(500).json({ message: "Failed to retrieve payment status" });
+    }
+  });
+  app2.post("/api/payment/create-order", async (req, res) => {
+    try {
+      const { amount, currency = "EUR", description } = req.body;
+      if (!amount) {
+        return res.status(400).json({ message: "Amount is required" });
+      }
+      const orderid = `ORDER_${Date.now()}_${req.user?.id}`;
+      console.log(`Payment order created: ${orderid} for user: ${req.user?.id}`);
+      res.status(201).json({
+        orderid,
+        amount,
+        currency,
+        description,
+        userId: req.user?.id,
+        message: "Payment order created successfully"
+      });
+    } catch (error) {
+      console.error("Payment order creation error:", error);
+      res.status(500).json({ message: "Failed to create payment order" });
+    }
+  });
+}
+
 // server/routes.ts
 function requireAdmin(req, res, next) {
   if (!req.isAuthenticated() || !req.user || req.user.role !== "admin") {
@@ -598,7 +753,29 @@ function requireAuth(req, res, next) {
   next();
 }
 function registerRoutes(app2) {
+  app2.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      "http://localhost:8081",
+      "http://localhost:19006",
+      "http://localhost:3000",
+      "http://127.0.0.1:8081",
+      "https://tennis-web-app.vercel.app"
+    ];
+    if (origin && (allowedOrigins.includes(origin) || origin.includes("localhost") || origin.includes("127.0.0.1"))) {
+      res.header("Access-Control-Allow-Origin", origin);
+    }
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    if (req.method === "OPTIONS") {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
   setupAuth(app2);
+  setupPaysera(app2);
   app2.get("/api/users", requireAdmin, async (req, res) => {
     try {
       const users2 = await storage.getAllUsers();
@@ -687,9 +864,9 @@ function registerRoutes(app2) {
       const todayStr = today.toISOString().split("T")[0];
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0];
       const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0];
-      const dailyRevenue = confirmedBookings.filter((b) => b.timeSlot.date === todayStr).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
-      const weeklyRevenue = confirmedBookings.filter((b) => b.timeSlot.date >= weekAgo).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
-      const monthlyRevenue = confirmedBookings.filter((b) => b.timeSlot.date >= monthAgo).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+      const dailyRevenue = confirmedBookings.filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] === todayStr).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+      const weeklyRevenue = confirmedBookings.filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] >= weekAgo).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
+      const monthlyRevenue = confirmedBookings.filter((b) => new Date(b.timeSlot.date).toISOString().split("T")[0] >= monthAgo).reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
       const totalTimeSlots = bookings2.length;
       const bookedTimeSlots = confirmedBookings.length;
       const occupancyRate = totalTimeSlots > 0 ? Math.round(bookedTimeSlots / totalTimeSlots * 100) : 0;
@@ -852,6 +1029,7 @@ function registerRoutes(app2) {
       }
       const rule = await storage.createOrUpdatePricingRule(
         courtId,
+        0,
         timeSlot,
         price
       );
@@ -1012,10 +1190,12 @@ function registerRoutes(app2) {
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
       }
+      const start = new Date(startDate);
+      const end = new Date(endDate);
       const bookings2 = await storage.getAllBookings();
       const filteredBookings = bookings2.filter((booking) => {
-        const bookingDate = booking.timeSlot.date;
-        return bookingDate >= startDate && bookingDate <= endDate;
+        const bookingDate = new Date(booking.timeSlot.date);
+        return bookingDate >= start && bookingDate <= end;
       });
       res.json(filteredBookings);
     } catch (error) {
@@ -1140,8 +1320,8 @@ function serveStatic(app2) {
 }
 
 // server/index.ts
-import dotenv3 from "dotenv";
-dotenv3.config({ path: ".env" });
+import dotenv4 from "dotenv";
+dotenv4.config({ path: ".env" });
 var app = express2();
 app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
