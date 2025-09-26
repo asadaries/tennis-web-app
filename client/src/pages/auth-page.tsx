@@ -234,6 +234,18 @@ export default function AuthPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Privacy Policy Link */}
+          <div className="text-center mt-6">
+            <a
+              href="/privacy-policy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-600 hover:text-primary underline transition-colors"
+            >
+              Privacy Policy
+            </a>
+          </div>
         </div>
       </div>
 

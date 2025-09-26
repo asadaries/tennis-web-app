@@ -4,6 +4,8 @@ import path from "path";
 import { fileURLToPath, URL } from 'node:url';
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
   plugins: [
     react(),
@@ -24,9 +26,9 @@ export default defineConfig({
       "@assets": fileURLToPath(new URL('./attached_assets', import.meta.url)),
     },
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
   server: {
